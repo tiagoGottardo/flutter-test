@@ -16,12 +16,12 @@ class RegisterPage extends StatelessWidget {
       );
       Get.offAllNamed('/');
     } catch (e) {
-      //printToConsole(e.toString());
-      print(e.toString());
-
-      Get.snackbar("Registration Failed", e.toString(),
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white);
+      Get.snackbar(
+        "Registration Failed",
+        e.toString(),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
     }
   }
 
@@ -33,8 +33,15 @@ class RegisterPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
-            TextField(controller: passCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
+            TextField(
+              controller: emailCtrl,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: passCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
+            ),
             const SizedBox(height: 20),
             ElevatedButton(onPressed: register, child: const Text('Register')),
             TextButton(
@@ -47,4 +54,3 @@ class RegisterPage extends StatelessWidget {
     );
   }
 }
-
