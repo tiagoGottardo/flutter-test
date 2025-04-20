@@ -4,18 +4,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'firebase_options.dart';
 
-
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 
 import 'pages/home_page.dart';
+import 'pages/task_page.dart';
 import 'pages/profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const MyApp());
 }
@@ -37,7 +35,8 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/register', page: () => RegisterPage()),
         GetPage(name: '/', page: () => HomePage()),
         GetPage(name: '/profile', page: () => ProfilePage()),
-      ]
+        GetPage(name: '/task', page: () => TaskPage()),
+      ],
     );
   }
 }
