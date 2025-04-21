@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       Get.find<TaskService>().syncWithFirestore(user.uid);
-      setState(() {}); // Rebuild with local tasks if needed
+      setState(() {});
     }
   }
 
