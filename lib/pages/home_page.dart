@@ -6,8 +6,72 @@ import 'package:todo_app/models/task.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class HomePage extends StatelessWidget {
+enum Filter { favorite, undone, none }
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final TextEditingController searchController = TextEditingController();
+  late Stream<QuerySnapshot> tasksStream;
+  String searchQuery = '';
+  Filter filter = Filter.none;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the stream
+    searchController.addListener(_updateSearchQuery);
+    _updateTasksStream(); // Initial stream load
+  }
+
+  void _updateSearchQuery() {
+    setState(() {
+      searchQuery = searchController.text;
+    });
+    _updateTasksStream(); // Update Firestore query based on the search
+  }
+
+  void _updateTasksStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Start with the basic Firestore query
+      var query = FirebaseFirestore.instance
+          .collection('tasks')
+          .where('ownerId', isEqualTo: user.uid);
+
+      if (searchQuery.isNotEmpty) {
+        query = query
+            .where('title', isGreaterThanOrEqualTo: searchQuery)
+            .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff');
+      }
+
+      if (filter == Filter.undone) {
+        query = query.where('done', isEqualTo: false);
+      }
+
+      if (filter == Filter.favorite) {
+        query = query.where('favorite', isEqualTo: true);
+      }
+
+      query = query
+          .orderBy('done', descending: false)
+          .orderBy('favorite', descending: true);
+
+      tasksStream = query.snapshots();
+    }
+  }
+
+  @override
+  void dispose() {
+    searchController.removeListener(_updateSearchQuery);
+    searchController.dispose();
+    super.dispose();
+  }
 
   void logout() async {
     await FirebaseAuth.instance.signOut();
@@ -22,13 +86,6 @@ class HomePage extends StatelessWidget {
       Get.offAllNamed('/login');
       return const Center(child: Text('You must be logged in'));
     }
-
-    final tasksStream =
-        FirebaseFirestore.instance
-            .collection('tasks')
-            .where('ownerId', isEqualTo: user.uid)
-            .orderBy('createdAt', descending: true)
-            .snapshots();
 
     final userName =
         (user.displayName?.trim().isNotEmpty ?? false)
@@ -62,16 +119,27 @@ class HomePage extends StatelessWidget {
             ListTile(
               title: const Text('Logout'),
               trailing: const Icon(Icons.logout),
-              onTap: () async {
-                await FirebaseAuth.instance.signOut();
-                Get.offAllNamed('/login'); // or your login route
-              },
+              onTap: logout,
             ),
           ],
         ),
       ),
       body: Column(
         children: [
+          SizedBox(
+            width: 330,
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    width: 2.0, // Border width
+                  ),
+                ),
+              ),
+            ),
+          ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: tasksStream,
