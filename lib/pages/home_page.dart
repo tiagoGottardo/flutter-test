@@ -8,6 +8,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum Filter { favorite, undone, none }
 
+Filter toggleFilter(Filter actual) {
+  switch (actual) {
+    case Filter.favorite:
+      return Filter.undone;
+    case Filter.undone:
+      return Filter.none;
+    case Filter.none:
+      return Filter.favorite;
+  }
+}
+
+Icon pickFilterIcon(Filter filter) {
+  IconData icon;
+
+  switch (filter) {
+    case Filter.favorite:
+      icon = Icons.star;
+      break;
+    case Filter.undone:
+      icon = Icons.circle_outlined;
+      break;
+    case Filter.none:
+      icon = Icons.filter_list;
+      break;
+  }
+
+  return Icon(icon, color: Colors.white, size: 26);
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -24,16 +53,15 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Initialize the stream
     searchController.addListener(_updateSearchQuery);
-    _updateTasksStream(); // Initial stream load
+    _updateTasksStream();
   }
 
   void _updateSearchQuery() {
     setState(() {
       searchQuery = searchController.text;
     });
-    _updateTasksStream(); // Update Firestore query based on the search
+    _updateTasksStream();
   }
 
   void _updateTasksStream() {
@@ -126,20 +154,49 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          SizedBox(
-            width: 330,
-            child: TextField(
-              controller: searchController,
-              decoration: const InputDecoration(
-                labelText: 'Search',
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    width: 2.0, // Border width
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 300,
+                child: TextField(
+                  controller: searchController,
+                  decoration: const InputDecoration(
+                    labelText: 'Search',
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        width: 2.0, // Border width
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              // ElevatedButton(onPressed: onPressed, child: child),
+              SizedBox(width: 10),
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: IconButton(
+                  style: IconButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: pickFilterIcon(filter),
+                  onPressed: () {
+                    setState(() {
+                      filter = toggleFilter(filter);
+                      _updateTasksStream();
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
+          SizedBox(height: 15),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: tasksStream,
