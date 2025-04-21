@@ -84,7 +84,9 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      Get.offAllNamed('/login');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed('/login');
+      });
       return const Center(child: Text('You must be logged in'));
     }
 
