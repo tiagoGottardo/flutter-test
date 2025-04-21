@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 import 'package:todo_app/services/task_service.dart';
 import 'firebase_options.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:todo_app/utils/themes.dart';
+import 'package:todo_app/controllers/theme_controller.dart';
 
 import 'package:todo_app/models/task.dart';
 
@@ -32,7 +34,7 @@ void main() async {
   }
 
   FirebaseFirestore.instance.settings = Settings(persistenceEnabled: true);
-
+  Get.put(ThemeController());
   runApp(const MyApp());
 }
 
@@ -44,9 +46,9 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.light,
       initialRoute: '/',
       getPages: [
         GetPage(name: '/login', page: () => LoginPage()),

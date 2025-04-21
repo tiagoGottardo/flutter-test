@@ -4,6 +4,7 @@ import 'package:todo_app/models/task.dart';
 import 'package:todo_app/services/task_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:todo_app/controllers/theme_controller.dart';
 
 TaskFilter toggleFilter(TaskFilter actual) {
   switch (actual) {
@@ -29,7 +30,7 @@ Icon pickFilterIcon(TaskFilter filter) {
       icon = Icons.filter_list;
       break;
   }
-  return Icon(icon, color: Colors.white, size: 26);
+  return Icon(icon);
 }
 
 class HomePage extends StatefulWidget {
@@ -45,6 +46,7 @@ class _HomePageState extends State<HomePage> {
 
   String searchQuery = '';
   TaskFilter filter = TaskFilter.none;
+  final themeController = Get.put(ThemeController());
 
   @override
   void initState() {
@@ -106,14 +108,14 @@ class _HomePageState extends State<HomePage> {
             ),
             ListTile(
               title: const Text('Toggle Theme'),
-              trailing: Icon(
-                Get.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+              trailing: Obx(
+                () => Icon(
+                  themeController.isDark.value
+                      ? Icons.dark_mode
+                      : Icons.light_mode,
+                ),
               ),
-              onTap: () {
-                Get.changeThemeMode(
-                  Get.isDarkMode ? ThemeMode.light : ThemeMode.dark,
-                );
-              },
+              onTap: () => themeController.toggleTheme(),
             ),
             ListTile(
               title: const Text('Logout'),
@@ -125,7 +127,9 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
+          SizedBox(height: 16),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Expanded(
                 child: Padding(
