@@ -74,14 +74,21 @@ class TaskPage extends StatelessWidget {
                       return;
                     }
 
+                    if (args != null) {
+                      debugPrint("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+                      args['title'] = title.text;
+                      args['description'] = description.text;
+                    }
+
                     final task =
                         args != null
-                            ? Task.fromMap(args, args['id'])
+                            ? Task.fromMap(args)
                             : Task.createNew(
                               ownerId: currentUser.uid,
                               title: title.text,
                               description: description.text,
                             );
+
                     final tasksCollection = FirebaseFirestore.instance
                         .collection('tasks');
 

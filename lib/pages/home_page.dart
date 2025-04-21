@@ -87,7 +87,8 @@ class HomePage extends StatelessWidget {
                 final tasks =
                     snapshot.data!.docs.map((doc) {
                       final data = doc.data() as Map<String, dynamic>;
-                      return Task.fromMap(data, doc.id);
+                      data['id'] = doc.id;
+                      return Task.fromMap(data);
                     }).toList();
 
                 return ListView.builder(
@@ -143,8 +144,7 @@ class HomePage extends StatelessWidget {
                                     onPressed: () {
                                       Get.toNamed(
                                         '/task',
-                                        arguments:
-                                            task.toMap()..['id'] = task.id,
+                                        arguments: task.toMap(),
                                       );
                                     },
                                     icon: Icon(Icons.edit),

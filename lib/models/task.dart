@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/v4.dart';
 
 class Task {
@@ -19,17 +20,21 @@ class Task {
     required this.createdAt,
   });
 
-  factory Task.fromMap(Map<String, dynamic> data, String id) => Task(
-    id: id,
-    ownerId: data['ownerId'],
-    title: data["title"],
-    description: data["description"],
-    done: data["done"],
-    favorite: data["favorite"],
-    createdAt: (data["createdAt"]).toDate(),
+  factory Task.fromMap(Map<String, dynamic> data) => Task(
+    id: data['id'],
+    ownerId: data['ownerId'] ?? '',
+    title: data["title"] ?? '',
+    description: data["description"] ?? '',
+    done: data["done"] ?? false,
+    favorite: data["favorite"] ?? false,
+    createdAt:
+        data["createdAt"] is Timestamp
+            ? (data["createdAt"] as Timestamp).toDate()
+            : data["createdAt"] as DateTime,
   );
 
   Map<String, dynamic> toMap() => {
+    'id': id,
     'ownerId': ownerId,
     'title': title,
     'description': description,
