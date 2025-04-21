@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterPage extends StatelessWidget {
-  final emailCtrl = TextEditingController();
-  final passCtrl = TextEditingController();
+  final name = TextEditingController();
+  final email = TextEditingController();
+  final password = TextEditingController();
 
   RegisterPage({super.key});
 
   void register() async {
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailCtrl.text,
-        password: passCtrl.text,
+        email: email.text,
+        password: password.text,
       );
+      await FirebaseAuth.instance.currentUser!.updateDisplayName(name.text);
+
       Get.offAllNamed('/');
     } catch (e) {
       Get.snackbar(
@@ -34,11 +38,15 @@ class RegisterPage extends StatelessWidget {
         child: Column(
           children: [
             TextField(
-              controller: emailCtrl,
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: email,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
             TextField(
-              controller: passCtrl,
+              controller: password,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Password'),
             ),
