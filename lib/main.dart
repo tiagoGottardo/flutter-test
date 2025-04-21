@@ -15,7 +15,6 @@ import 'pages/register_page.dart';
 
 import 'pages/home_page.dart';
 import 'pages/task_page.dart';
-import 'pages/profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +52,6 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/login', page: () => LoginPage()),
         GetPage(name: '/register', page: () => RegisterPage()),
         GetPage(name: '/', page: () => HomePage()),
-        GetPage(name: '/profile', page: () => ProfilePage()),
         GetPage(name: '/task', page: () => TaskPage()),
       ],
     );
