@@ -11,7 +11,7 @@ plugins {
 android {
     namespace = "com.example.todo_app"
     //compileSdk = flutter.compileSdkVersion
-    compileSdk = 34
+    compileSdk = 35
     //ndkVersion = flutter.ndkVersion
     ndkVersion = "27.0.12077973"
 

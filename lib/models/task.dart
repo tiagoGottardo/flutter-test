@@ -1,13 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
 import 'package:uuid/v4.dart';
 
-class Task {
+part 'task.g.dart';
+
+@HiveType(typeId: 0)
+class Task extends HiveObject {
+  @HiveField(0)
   String id;
+
+  @HiveField(1)
   String ownerId;
+
+  @HiveField(2)
   String title;
+
+  @HiveField(3)
   String description;
+
+  @HiveField(4)
   bool done;
+
+  @HiveField(5)
   bool favorite;
+
+  @HiveField(6)
   DateTime createdAt;
 
   Task({

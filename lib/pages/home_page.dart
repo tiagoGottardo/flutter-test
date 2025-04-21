@@ -1,39 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import 'package:todo_app/models/task.dart';
-
+import 'package:todo_app/services/task_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-enum Filter { favorite, undone, none }
-
-Filter toggleFilter(Filter actual) {
+TaskFilter toggleFilter(TaskFilter actual) {
   switch (actual) {
-    case Filter.favorite:
-      return Filter.undone;
-    case Filter.undone:
-      return Filter.none;
-    case Filter.none:
-      return Filter.favorite;
+    case TaskFilter.favorite:
+      return TaskFilter.undone;
+    case TaskFilter.undone:
+      return TaskFilter.none;
+    case TaskFilter.none:
+      return TaskFilter.favorite;
   }
 }
 
-Icon pickFilterIcon(Filter filter) {
+Icon pickFilterIcon(TaskFilter filter) {
   IconData icon;
-
   switch (filter) {
-    case Filter.favorite:
+    case TaskFilter.favorite:
       icon = Icons.star;
       break;
-    case Filter.undone:
+    case TaskFilter.undone:
       icon = Icons.circle_outlined;
       break;
-    case Filter.none:
+    case TaskFilter.none:
       icon = Icons.filter_list;
       break;
   }
-
   return Icon(icon, color: Colors.white, size: 26);
 }
 
@@ -46,57 +41,33 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController searchController = TextEditingController();
-  late Stream<QuerySnapshot> tasksStream;
+  final TaskService taskService = Get.find<TaskService>();
+
   String searchQuery = '';
-  Filter filter = Filter.none;
+  TaskFilter filter = TaskFilter.none;
 
   @override
   void initState() {
     super.initState();
-    searchController.addListener(_updateSearchQuery);
-    _updateTasksStream();
-  }
 
-  void _updateSearchQuery() {
-    setState(() {
-      searchQuery = searchController.text;
+    _syncTasks();
+    searchController.addListener(() {
+      setState(() {
+        searchQuery = searchController.text;
+      });
     });
-    _updateTasksStream();
   }
 
-  void _updateTasksStream() {
+  Future<void> _syncTasks() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      // Start with the basic Firestore query
-      var query = FirebaseFirestore.instance
-          .collection('tasks')
-          .where('ownerId', isEqualTo: user.uid);
-
-      if (searchQuery.isNotEmpty) {
-        query = query
-            .where('title', isGreaterThanOrEqualTo: searchQuery)
-            .where('title', isLessThanOrEqualTo: searchQuery + '\uf8ff');
-      }
-
-      if (filter == Filter.undone) {
-        query = query.where('done', isEqualTo: false);
-      }
-
-      if (filter == Filter.favorite) {
-        query = query.where('favorite', isEqualTo: true);
-      }
-
-      query = query
-          .orderBy('done', descending: false)
-          .orderBy('favorite', descending: true);
-
-      tasksStream = query.snapshots();
+      Get.find<TaskService>().syncWithFirestore(user.uid);
+      setState(() {}); // Rebuild with local tasks if needed
     }
   }
 
   @override
   void dispose() {
-    searchController.removeListener(_updateSearchQuery);
     searchController.dispose();
     super.dispose();
   }
@@ -155,71 +126,53 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  controller: searchController,
-                  decoration: const InputDecoration(
-                    labelText: 'Search',
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        width: 2.0, // Border width
-                      ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Search',
+                      border: OutlineInputBorder(),
                     ),
                   ),
                 ),
               ),
-              // ElevatedButton(onPressed: onPressed, child: child),
-              SizedBox(width: 10),
-              SizedBox(
-                width: 50,
-                height: 50,
-                child: IconButton(
-                  style: IconButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: pickFilterIcon(filter),
-                  onPressed: () {
-                    setState(() {
+              IconButton(
+                icon: pickFilterIcon(filter),
+                onPressed:
+                    () => setState(() {
                       filter = toggleFilter(filter);
-                      _updateTasksStream();
-                    });
-                  },
+                    }),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  foregroundColor: Colors.white,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 15),
+          const SizedBox(height: 15),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: tasksStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            child: ValueListenableBuilder(
+              valueListenable: taskService.taskBox.listenable(),
+              builder: (context, Box<Task> box, _) {
+                final filteredTasks = taskService.getFilteredTasks(
+                  searchQuery,
+                  filter,
+                );
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                if (filteredTasks.isEmpty) {
                   return const Center(child: Text('No tasks found.'));
                 }
 
-                final tasks =
-                    snapshot.data!.docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      data['id'] = doc.id;
-                      return Task.fromMap(data);
-                    }).toList();
-
                 return ListView.builder(
-                  itemCount: tasks.length,
+                  itemCount: filteredTasks.length,
                   itemBuilder: (context, index) {
-                    final task = tasks[index];
+                    final task = filteredTasks[index];
                     return ExpansionTile(
                       title: Text(task.title),
                       trailing: Row(
@@ -232,23 +185,14 @@ class _HomePageState extends State<HomePage> {
                                   : Icons.circle_outlined,
                               color: task.done ? Colors.green : null,
                             ),
-                            onPressed:
-                                () async => await FirebaseFirestore.instance
-                                    .collection('tasks')
-                                    .doc(task.id)
-                                    .update({'done': !task.done}),
+                            onPressed: () => taskService.toggleDone(task),
                           ),
                           IconButton(
                             icon: Icon(
                               task.favorite ? Icons.star : Icons.star_border,
                               color: task.favorite ? Colors.amber : Colors.grey,
                             ),
-                            onPressed: () async {
-                              await FirebaseFirestore.instance
-                                  .collection('tasks')
-                                  .doc(task.id)
-                                  .update({'favorite': !task.favorite});
-                            },
+                            onPressed: () => taskService.toggleFavorite(task),
                           ),
                         ],
                       ),
@@ -266,14 +210,13 @@ class _HomePageState extends State<HomePage> {
                               Row(
                                 children: [
                                   TextButton.icon(
-                                    onPressed: () {
-                                      Get.toNamed(
-                                        '/task',
-                                        arguments: task.toMap(),
-                                      );
-                                    },
-                                    icon: Icon(Icons.edit),
-                                    label: Text('Edit'),
+                                    onPressed:
+                                        () => Get.toNamed(
+                                          '/task',
+                                          arguments: task.toMap(),
+                                        ),
+                                    icon: const Icon(Icons.edit),
+                                    label: const Text('Edit'),
                                   ),
                                   TextButton.icon(
                                     onPressed: () async {
@@ -291,14 +234,14 @@ class _HomePageState extends State<HomePage> {
                                       );
 
                                       if (confirmed == true) {
-                                        await FirebaseFirestore.instance
-                                            .collection('tasks')
-                                            .doc(task.id)
-                                            .delete();
+                                        taskService.deleteTask(task.id);
                                       }
                                     },
-                                    icon: Icon(Icons.delete, color: Colors.red),
-                                    label: Text(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    label: const Text(
                                       'Delete',
                                       style: TextStyle(color: Colors.red),
                                     ),
@@ -319,7 +262,7 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Get.offAllNamed('/task'),
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );

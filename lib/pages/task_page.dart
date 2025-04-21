@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:todo_app/models/task.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:todo_app/services/task_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class TaskPage extends StatelessWidget {
   final title = TextEditingController();
   final description = TextEditingController();
+  final TaskService _taskService = Get.find<TaskService>();
 
   TaskPage({super.key});
 
@@ -57,7 +57,7 @@ class TaskPage extends StatelessWidget {
                     if (title.text.isEmpty) {
                       Get.snackbar(
                         'Error',
-                        'Task must has title',
+                        'Task must have a title',
                         colorText: Colors.white,
                         backgroundColor: Colors.redAccent,
                       );
@@ -74,12 +74,6 @@ class TaskPage extends StatelessWidget {
                       return;
                     }
 
-                    if (args != null) {
-                      debugPrint("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
-                      args['title'] = title.text;
-                      args['description'] = description.text;
-                    }
-
                     final task =
                         args != null
                             ? Task.fromMap(args)
@@ -89,11 +83,15 @@ class TaskPage extends StatelessWidget {
                               description: description.text,
                             );
 
-                    final tasksCollection = FirebaseFirestore.instance
-                        .collection('tasks');
-
                     try {
-                      await tasksCollection.doc(task.id).set(task.toMap());
+                      if (args != null) {
+                        task.title = title.text;
+                        task.description = description.text;
+                        await _taskService.updateTask(task);
+                      } else {
+                        await _taskService.addTask(task);
+                      }
+
                       Get.offAllNamed('/');
                       Get.snackbar('Success', 'Task saved successfully!');
                     } catch (e) {
